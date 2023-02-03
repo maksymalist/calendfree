@@ -36,7 +36,11 @@ declare module "next-auth" {
  * adapters, providers, callbacks, etc.
  * @see https://next-auth.js.org/configuration/options
  **/
+
 export const authOptions: NextAuthOptions = {
+  pages: {
+    signIn: "/",
+  },
   callbacks: {
     session({ session, user }) {
       if (session.user) {
@@ -44,6 +48,23 @@ export const authOptions: NextAuthOptions = {
         // session.user.role = user.role; <-- put other properties on the session here
       }
       return session;
+    },
+  },
+  events: {
+    createUser: async (message) => {
+      try {
+        const { user } = message;
+
+        const calendar = await prisma.calendar.create({
+          data: {
+            userId: user.id,
+          },
+        });
+
+        console.log("Created Calendar", calendar);
+      } catch (error) {
+        console.error("Error creating calendar", error);
+      }
     },
   },
   adapter: PrismaAdapter(prisma),
