@@ -1,4 +1,8 @@
-import { type NextPage } from "next";
+import {
+  type NextPage,
+  type GetServerSideProps,
+  type GetServerSidePropsContext,
+} from "next";
 import Image from "next/image";
 import HeadComponent from "../../../../components/Head";
 import Calendar from "../../../../components/Calendar";
@@ -6,11 +10,19 @@ import { Menu, Transition } from "@headlessui/react";
 import { Fragment } from "react";
 import { api } from "../../../utils/api";
 import { useRouter } from "next/router";
+import { getSession } from "next-auth/react";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import Link from "next/link";
+import { router } from "@trpc/server";
 
-const Profile: NextPage = () => {
-  const { query } = useRouter();
+type Props = {
+  isOwner: boolean;
+};
+
+const Profile: NextPage<Props> = ({ isOwner }) => {
+  const router = useRouter();
+  const query = router.query;
   const id: string = query?.id ? query?.id.toString() : "";
   const userQuery = api.user.get.useQuery({
     id,
@@ -24,6 +36,30 @@ const Profile: NextPage = () => {
       />
       <main className="bg-origin-padding-0 flex min-h-screen flex-wrap items-start justify-center bg-slate-100 bg-dotted-pattern">
         <section className="mx-10 mt-20 w-full rounded-md bg-white p-4 px-6 pb-12 shadow-md lg:w-[350px]">
+          {isOwner && (
+            <div className="flex w-full flex-row justify-end">
+              <Link href={`/profile/${id}/edit`}>
+                <button className="flex flex-row rounded-md border-2 border-black p-1 pl-4 transition-all hover:bg-black hover:text-white">
+                  <span className="mr-1 ">edit</span>{" "}
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    stroke-width="2"
+                    stroke="currentColor"
+                    fill="none"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                    <path d="M4 20h4l10.5 -10.5a1.5 1.5 0 0 0 -4 -4l-10.5 10.5v4"></path>
+                    <path d="M13.5 6.5l4 4"></path>
+                  </svg>
+                </button>
+              </Link>
+            </div>
+          )}
           <div className="px-6">
             <div className="flex w-full flex-col items-center">
               <Image
@@ -34,7 +70,7 @@ const Profile: NextPage = () => {
                 }
                 width={100}
                 height={100}
-                className="mt-[-65px] w-24 rounded-full border-4 border-white"
+                className="mt-[-95px] w-24 rounded-full border-4 border-white"
               />
               <Menu as="div" className="relative inline-block text-left">
                 <div>
@@ -166,9 +202,9 @@ const Profile: NextPage = () => {
             </div>
             <div className="mt-6 flex w-full flex-col items-center border-t border-slate-200 text-center">
               {userQuery.data?.user?.bio && (
-                <h3 className="text-blueGray-700 mb-2 ml-4 mr-4 max-w-[250px] text-center text-sm leading-normal">
+                <p className="text-blueGray-700 mb-2 ml-4 mr-4 max-w-[250px] pt-5 text-center text-sm italic leading-normal">
                   {userQuery.data?.user?.bio}
-                </h3>
+                </p>
               )}
               <div className="mt-4 flex w-full justify-center">
                 <svg
@@ -283,3 +319,33 @@ const Profile: NextPage = () => {
 };
 
 export default Profile;
+
+export async function getServerSideProps(context: GetServerSidePropsContext) {
+  const { req } = context;
+  const query = context.query;
+
+  const session = await getSession({ req });
+
+  if (!session) {
+    return {
+      redirect: {
+        destination: `/?profile=${query?.id?.toString() || ""}`,
+        permanent: false,
+      },
+    };
+  }
+
+  if (session.user.id !== query?.id) {
+    return {
+      props: {
+        isOwner: false,
+      },
+    };
+  }
+
+  return {
+    props: {
+      isOwner: true,
+    },
+  };
+}
