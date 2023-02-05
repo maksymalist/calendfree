@@ -32,7 +32,15 @@ const Profile: NextPage = () => {
     const values = new FormData(e.target as HTMLFormElement).entries();
     const fields = Object.fromEntries(values);
 
-    console.log(fields);
+    if (fields?.website) {
+      if (
+        !fields?.website?.toString().startsWith("https") ||
+        !fields?.website?.toString().startsWith("http")
+      ) {
+        toast.error("Website must start with https or http");
+        return;
+      }
+    }
 
     update_user.mutate({
       id: id,

@@ -1,6 +1,7 @@
 import { Menu, Transition } from "@headlessui/react";
 import { DotsVerticalIcon } from "@heroicons/react/outline";
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/solid";
+import { constants } from "buffer";
 import {
   add,
   eachDayOfInterval,
@@ -17,7 +18,7 @@ import {
 } from "date-fns";
 import { Fragment, useState } from "react";
 
-const meetings = [
+const events = [
   {
     id: 1,
     name: "Leslie Alexander",
@@ -64,29 +65,35 @@ function classNames(...classes) {
   return classes.filter(Boolean).join(" ");
 }
 
-export default function Example() {
-  let today = startOfToday();
-  let [selectedDay, setSelectedDay] = useState(today);
-  let [currentMonth, setCurrentMonth] = useState(format(today, "MMM-yyyy"));
-  let firstDayCurrentMonth = parse(currentMonth, "MMM-yyyy", new Date());
+type Props = {
+  events: any;
+  isOwner: boolean;
+  openModal: () => void;
+};
 
-  let days = eachDayOfInterval({
+const Calendar: React.FC<Props> = ({ isOwner, openModal }) => {
+  const today = startOfToday();
+  const [selectedDay, setSelectedDay] = useState(today);
+  const [currentMonth, setCurrentMonth] = useState(format(today, "MMM-yyyy"));
+  const firstDayCurrentMonth = parse(currentMonth, "MMM-yyyy", new Date());
+
+  const days = eachDayOfInterval({
     start: firstDayCurrentMonth,
     end: endOfMonth(firstDayCurrentMonth),
   });
 
   function previousMonth() {
-    let firstDayNextMonth = add(firstDayCurrentMonth, { months: -1 });
+    const firstDayNextMonth = add(firstDayCurrentMonth, { months: -1 });
     setCurrentMonth(format(firstDayNextMonth, "MMM-yyyy"));
   }
 
   function nextMonth() {
-    let firstDayNextMonth = add(firstDayCurrentMonth, { months: 1 });
+    const firstDayNextMonth = add(firstDayCurrentMonth, { months: 1 });
     setCurrentMonth(format(firstDayNextMonth, "MMM-yyyy"));
   }
 
-  let selectedDayMeetings = meetings.filter((meeting) =>
-    isSameDay(parseISO(meeting.startDatetime), selectedDay)
+  const selectedDayEvents = events.filter((event) =>
+    isSameDay(parseISO(event.startDatetime), selectedDay)
   );
 
   return (
@@ -162,8 +169,8 @@ export default function Example() {
                 </button>
 
                 <div className="mx-auto mt-1 h-1 w-1">
-                  {meetings.some((meeting) =>
-                    isSameDay(parseISO(meeting.startDatetime), day)
+                  {events.some((event) =>
+                    isSameDay(parseISO(event.startDatetime), day)
                   ) && <div className="h-1 w-1 rounded-full bg-sky-500"></div>}
                 </div>
               </div>
@@ -171,6 +178,30 @@ export default function Example() {
           </div>
         </div>
         <section className="mt-4">
+          <button
+            className="my-4 flex w-full flex-row justify-center rounded-md border border-red-500 p-2 font-bold text-red-500 transition-all hover:bg-red-500 hover:text-white"
+            onClick={openModal}
+          >
+            <span className="mr-4">add event</span>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              stroke-width="2"
+              stroke="currentColor"
+              fill="none"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+              <path d="M4 5m0 2a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2z"></path>
+              <path d="M16 3l0 4"></path>
+              <path d="M8 3l0 4"></path>
+              <path d="M4 11l16 0"></path>
+              <path d="M8 15h2v2h-2z"></path>
+            </svg>
+          </button>
           <h2 className="font-semibold text-gray-900">
             Schedule for{" "}
             <time dateTime={format(selectedDay, "yyyy-MM-dd")}>
@@ -178,39 +209,45 @@ export default function Example() {
             </time>
           </h2>
           <ol className="mt-4 space-y-1 text-sm leading-6 text-gray-500">
-            {selectedDayMeetings.length > 0 ? (
-              selectedDayMeetings.map((meeting) => (
-                <Meeting meeting={meeting} key={meeting.id} />
+            {selectedDayEvents.length > 0 ? (
+              selectedDayEvents.map((event) => (
+                <EventComponent event={event} key={event.id} />
               ))
             ) : (
-              <p>No meetings for today.</p>
+              <p>No events for today.</p>
             )}
           </ol>
         </section>
       </div>
     </div>
   );
-}
+};
 
-function Meeting({ meeting }) {
-  let startDateTime = parseISO(meeting.startDatetime);
-  let endDateTime = parseISO(meeting.endDatetime);
+export default Calendar;
+
+type EventProps = {
+  event: any;
+};
+
+const EventComponent: React.FC<Event> = ({ event }) => {
+  const startDateTime = parseISO(event.startDatetime);
+  const endDateTime = parseISO(event.endDatetime);
 
   return (
     <li className="group flex items-center space-x-4 rounded-xl px-4 py-2 focus-within:bg-gray-100 hover:bg-gray-100">
       <img
-        src={meeting.imageUrl}
+        src={event.imageUrl}
         alt=""
         className="h-10 w-10 flex-none rounded-full"
       />
       <div className="flex-auto">
-        <p className="text-gray-900">{meeting.name}</p>
+        <p className="text-gray-900">{event.name}</p>
         <p className="mt-0.5">
-          <time dateTime={meeting.startDatetime}>
+          <time dateTime={event.startDatetime}>
             {format(startDateTime, "h:mm a")}
           </time>{" "}
           -{" "}
-          <time dateTime={meeting.endDatetime}>
+          <time dateTime={event.endDatetime}>
             {format(endDateTime, "h:mm a")}
           </time>
         </p>
@@ -269,7 +306,7 @@ function Meeting({ meeting }) {
       </Menu>
     </li>
   );
-}
+};
 
 const colStartClasses = [
   "",

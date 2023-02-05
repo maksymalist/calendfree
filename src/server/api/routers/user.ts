@@ -6,7 +6,8 @@ import { createTRPCRouter, publicProcedure, protectedProcedure } from "../trpc";
 export const userRouter = createTRPCRouter({
   get: publicProcedure
     .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
+      ctx.session?.user.id;
       const user = await prisma.user.findUnique({
         where: {
           id: input.id,
@@ -32,8 +33,17 @@ export const userRouter = createTRPCRouter({
         email: z.string().nullable().nullish(),
       })
     )
-    .mutation(async ({ input }) => {
-      console.log("INPUT", input);
+    .mutation(async ({ input, ctx }) => {
+      const id = ctx.session?.user.id;
+
+      if (id !== input.id) {
+        return {
+          error: {
+            message: "You are not authorized to update this user",
+          },
+        };
+      }
+
       const user = await prisma.user.update({
         where: {
           id: input.id,

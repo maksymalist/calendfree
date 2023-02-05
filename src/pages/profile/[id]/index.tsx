@@ -3,9 +3,11 @@ import {
   type GetServerSideProps,
   type GetServerSidePropsContext,
 } from "next";
+import { useState } from "react";
 import Image from "next/image";
 import HeadComponent from "../../../../components/Head";
 import Calendar from "../../../../components/Calendar";
+import CreateEventModal from "../../../../components/CreateEventModal";
 import { Menu, Transition } from "@headlessui/react";
 import { Fragment } from "react";
 import { api } from "../../../utils/api";
@@ -14,7 +16,6 @@ import { getSession } from "next-auth/react";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Link from "next/link";
-import { router } from "@trpc/server";
 
 type Props = {
   isOwner: boolean;
@@ -27,6 +28,7 @@ const Profile: NextPage<Props> = ({ isOwner }) => {
   const userQuery = api.user.get.useQuery({
     id,
   });
+  const [isCreateEvent, setIsCreateEvent] = useState<boolean>(false);
 
   return (
     <>
@@ -298,11 +300,16 @@ const Profile: NextPage<Props> = ({ isOwner }) => {
                     <path d="M10 14a3.5 3.5 0 0 0 5 0l4 -4a3.5 3.5 0 0 0 -5 -5l-.5 .5"></path>
                     <path d="M14 10a3.5 3.5 0 0 0 -5 0l-4 4a3.5 3.5 0 0 0 5 5l.5 -.5"></path>
                   </svg>
-                  <span className="text-blueGray-600 ml-2 text-sm">
+                  <a
+                    target="_blank"
+                    rel="noreferrer"
+                    href={userQuery.data?.user?.website || ""}
+                    className="text-blueGray-600 ml-2 text-sm text-blue-400 underline"
+                  >
                     {userQuery.data?.user?.website
                       ? userQuery.data?.user?.website
                       : "x xxx xxx xxxx"}
-                  </span>
+                  </a>
                 </div>
               </div>
             </div>
@@ -310,10 +317,20 @@ const Profile: NextPage<Props> = ({ isOwner }) => {
         </section>
         <section className="mx-10 mt-10 w-full rounded-md bg-white p-4 px-6 shadow-md lg:w-[400px]">
           <div className="p-4 text-center">
-            <Calendar />
+            <Calendar
+              isOwner={isOwner}
+              events={null}
+              openModal={() => setIsCreateEvent(true)}
+            />
           </div>
         </section>
       </main>
+      {isOwner && (
+        <CreateEventModal
+          closeModal={() => setIsCreateEvent(false)}
+          isOpen={isCreateEvent}
+        />
+      )}
     </>
   );
 };
